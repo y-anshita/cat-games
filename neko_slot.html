@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🐈 猫のスロットゲーム</title>
+    <style>
+        /* CSS (見た目を整えます) */
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #fffde7; /* やさしい黄色 */
+            color: #5d4037; /* 茶色 */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        #game-container {
+            background-color: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            text-align: center;
+            width: 90%;
+            max-width: 400px;
+        }
+
+        h1 {
+            color: #f57c00; /* オレンジ色 */
+            margin-top: 0;
+        }
+
+        /* リール（スロットの回転部分） */
+        #reels {
+            display: flex;
+            justify-content: space-around;
+            margin: 30px 0;
+            background-color: #fafafa;
+            border: 5px solid #ffca28; /* 黄色 */
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        .reel {
+            font-size: 80px; /* 猫の絵文字の大きさ */
+            width: 100px;
+            height: 120px;
+            line-height: 120px;
+            background-color: #ffffff;
+            border: 2px solid #eeeeee;
+            border-radius: 10px;
+            overflow: hidden;
+            user-select: none; /* テキスト選択を防ぐ */
+        }
+
+        /* 結果表示エリア */
+        #result {
+            font-size: 28px;
+            font-weight: bold;
+            color: #d81b60; /* ピンク色 */
+            height: 40px;
+            margin: 20px 0;
+        }
+
+        /* ボタン */
+        #controls {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+        }
+
+        .stop-button {
+            font-size: 16px;
+            padding: 10px 15px;
+            background-color: #4fc3f7; /* 水色 */
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .stop-button:disabled {
+            background-color: #b0bec5; /* グレー */
+            cursor: not-allowed;
+        }
+
+        #start-button {
+            font-size: 20px;
+            padding: 15px 30px;
+            width: 100%;
+            background-color: #66bb6a; /* 緑色 */
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        #start-button:disabled {
+            background-color: #b0bec5; /* グレー */
+            cursor: not-allowed;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <h1>🐈 猫のスロットゲーム 🐈</h1>
+
+        <div id="reels">
+            <div class="reel" id="reel1">🐱</div>
+            <div class="reel" id="reel2">🐱</div>
+            <div class="reel" id="reel3">🐱</div>
+        </div>
+
+        <div id="result"></div>
+
+        <div id="controls">
+            <button class="stop-button" id="stop1" disabled>ストップ１</button>
+            <button class="stop-button" id="stop2" disabled>ストップ２</button>
+            <button class="stop-button" id="stop3" disabled>ストップ３</button>
+        </div>
+
+        <button id="start-button">スタート！</button>
+    </div>
+
+    <script>
+        // JavaScript (ゲームの動きを制御します)
+
+        // 猫の絵文字リスト（好きな絵文字に変えられます）
+        const cats = ['🐱', '😸', '😹', '😻', '😼', '😽', '🙀', '😿', '😾', '🐈', '🐈‍⬛'];
+
+        // HTMLの要素を取得
+        const reel1 = document.getElementById('reel1');
+        const reel2 = document.getElementById('reel2');
+        const reel3 = document.getElementById('reel3');
+        const stop1 = document.getElementById('stop1');
+        const stop2 = document.getElementById('stop2');
+        const stop3 = document.getElementById('stop3');
+        const startButton = document.getElementById('start-button');
+        const resultDiv = document.getElementById('result');
+
+        // リールの状態を管理する変数
+        let interval1, interval2, interval3; // リールの回転（一定時間ごとの処理）
+        let isSpinning1 = false;
+        let isSpinning2 = false;
+        let isSpinning3 = false;
+
+        // ランダムに猫を選ぶ関数
+        function getRandomCat() {
+            const index = Math.floor(Math.random() * cats.length);
+            return cats[index];
+        }
+
+        // スタートボタンが押されたときの処理
+        startButton.addEventListener('click', () => {
+            // 回転中のリールをリセット
+            if (interval1) clearInterval(interval1);
+            if (interval2) clearInterval(interval2);
+            if (interval3) clearInterval(interval3);
+
+            // 状態を「回転中」にする
+            isSpinning1 = true;
+            isSpinning2 = true;
+            isSpinning3 = true;
+
+            // ボタンの状態をセット
+            startButton.disabled = true; // スタートを無効化
+            stop1.disabled = false;     // ストップを有効化
+            stop2.disabled = false;
+            stop3.disabled = false;
+
+            // 結果表示をクリア
+            resultDiv.textContent = '';
+
+            // 各リールを回転させる (0.1秒ごとに絵文字を変える)
+            interval1 = setInterval(() => {
+                reel1.textContent = getRandomCat();
+            }, 100);
+
+            interval2 = setInterval(() => {
+                reel2.textContent = getRandomCat();
+            }, 100);
+
+            interval3 = setInterval(() => {
+                reel3.textContent = getRandomCat();
+            }, 100);
+        });
+
+        // ストップボタン１が押されたときの処理
+        stop1.addEventListener('click', () => {
+            clearInterval(interval1); // リール1の回転を止める
+            isSpinning1 = false;
+            stop1.disabled = true; // ボタンを無効化
+            checkAllResult(); // すべて止まったかチェック
+        });
+
+        // ストップボタン２が押されたときの処理
+        stop2.addEventListener('click', () => {
+            clearInterval(interval2); // リール2の回転を止める
+            isSpinning2 = false;
+            stop2.disabled = true; // ボタンを無効化
+            checkAllResult(); // すべて止まったかチェック
+        });
+
+        // ストップボタン３が押されたときの処理
+        stop3.addEventListener('click', () => {
+            clearInterval(interval3); // リール3の回転を止める
+            isSpinning3 = false;
+            stop3.disabled = true; // ボタンを無効化
+            checkAllResult(); // すべて止まったかチェック
+        });
+
+        // 3つすべてのリールが止まったかチェックする関数
+        function checkAllResult() {
+            // 1つでも回転中なら何もしない
+            if (isSpinning1 || isSpinning2 || isSpinning3) {
+                return;
+            }
+
+            // 3つとも止まっていたら、当たり判定
+            const r1 = reel1.textContent;
+            const r2 = reel2.textContent;
+            const r3 = reel3.textContent;
+
+            if (r1 === r2 && r2 === r3) {
+                resultDiv.textContent = '🎉 あたり！ 🎉';
+            } else {
+                resultDiv.textContent = 'ざんねん...';
+            }
+
+            // スタートボタンを再度有効化
+            startButton.disabled = false;
+        }
+    </script>
+
+</body>
+</html>
