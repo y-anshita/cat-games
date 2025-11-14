@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🐈 猫の神経衰弱 (AI対戦版)</title>
+    <title>🐈 猫の神経衰弱 (対戦版)</title>
     <style>
         /* CSSは変更ありません */
         body {
@@ -101,7 +101,10 @@
         const scoreDisplay = document.getElementById('score-display');
         const turnDisplay = document.getElementById('turn-display');
 
-        const cardTypes = ['🐱', '🐟', '🥣', '🎀', '🐾', '🧶'];
+        // ▼▼▼ 【修正点 1】ペアの絵柄を変更 ▼▼▼
+        const cardTypes = ['🐱', '🐟', '🥣', '🎀', '🔔', '🧶'];
+        // ▲▲▲ -------------------------- ▲▲▲
+        
         let cardArray = [...cardTypes, ...cardTypes]; 
 
         let flippedCards = [];
@@ -132,12 +135,12 @@
                 card.dataset.emoji = emoji;
                 card.dataset.index = index;
                 
-                // ▼▼▼ ここを変更しました ▼▼▼
+                // ▼▼▼ 【修正点 2】裏面のアイコンを変更 ▼▼▼
                 card.innerHTML = `
                     <span class="front">${emoji}</span>
-                    <span class="back">🔔</span>
+                    <span class="back">🐾</span>
                 `;
-                // ▲▲▲ ----------------- ▲▲▲
+                // ▲▲▲ -------------------------- ▲▲▲
                 
                 card.addEventListener('click', onCardClick);
                 gameBoard.appendChild(card);
