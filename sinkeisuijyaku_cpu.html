@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🐈 猫の神経衰弱 (対戦版・24枚)</title>
+    <title>🐈 猫の神経衰弱 (AI対戦版・24枚)</title>
     <style>
-        /* CSS (レイアウトを24枚用に変更) */
+        /* CSS (スマホ対応レイアウトに変更) */
         body {
             font-family: 'Arial', sans-serif;
             background-color: #e0f2f1;
@@ -17,24 +17,35 @@
             height: 100vh;
             margin: 0;
             user-select: none;
+            /* 画面全体の幅をはみ出さないように */
+            overflow-x: hidden; 
         }
 
-        h1 { color: #00796b; margin-top: 0; }
+        h1 { 
+            color: #00796b; 
+            margin-top: 0; 
+            font-size: 26px; /* 少し小さく */
+        }
 
-        /* ▼ UI (スコアとターン表示) ▼ */
+        /* ▼ UI (幅を可変に) ▼ */
         #game-info {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            /* ▼ 幅を 6列 x 70px + 5 x 10px gap = 470px に ▼ */
-            width: 470px; 
+            /* ▼ 画面の95%の幅、ただし最大470pxまで ▼ */
+            width: 95%;
+            max-width: 470px; 
             margin-bottom: 10px;
         }
 
-        #score-display { font-size: 20px; font-weight: bold; }
+        /* ▼ フォントサイズも少し調整 ▼ */
+        #score-display { 
+            font-size: 18px; 
+            font-weight: bold; 
+        }
         
         #turn-display {
-            font-size: 20px;
+            font-size: 18px;
             font-weight: bold;
             color: #d81b60;
             background-color: #fff;
@@ -44,17 +55,21 @@
         /* ▲ ------------------- ▲ */
 
 
-        /* ▼ ボードのレイアウトを変更 ▼ */
+        /* ▼ ボードのレイアウトを可変に ▼ */
         #game-board {
             display: grid;
-            /* 6列 x 4行 */
-            grid-template-columns: repeat(6, 70px); 
-            grid-template-rows: repeat(4, 70px);
-            gap: 10px;
+            /* ▼ 6列の均等割り付け ▼ */
+            grid-template-columns: repeat(6, 1fr); 
+            /* ▼ 4行。高さは自動 ▼ */
+            grid-template-rows: repeat(4, auto);
+            /* ▼ すきまを少し狭く ▼ */
+            gap: 5px; 
             margin-bottom: 15px;
-            /* 4行 x 70px + 3 x 10px gap = 310px */
-            min-height: 310px; 
-            pointer-events: none; 
+            min-height: auto; /* 高さを自動に */
+            pointer-events: none;
+            /* ▼ 画面の95%の幅、ただし最大470pxまで ▼ */
+            width: 95%;
+            max-width: 470px;
         }
         /* ▲ ------------------- ▲ */
 
@@ -63,25 +78,33 @@
             pointer-events: auto;
         }
 
-        /* ▼ カードサイズを変更 ▼ */
+        /* ▼ カードサイズを可変に ▼ */
         .card {
-            width: 70px;
-            height: 70px;
+            /* ▼ 幅は自動で1frの幅になる ▼ */
+            width: 100%;
+            /* ▼ 高さを幅と同じにする (正方形にする) ▼ */
+            aspect-ratio: 1 / 1; 
+            height: auto; /* 高さは自動 */
+
             background-color: #ffffff;
             border: 3px solid #4db6ac;
-            border-radius: 10px;
+            border-radius: 8px; /* 角丸を少し小さく */
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 40px; /* アイコンサイズも調整 */
+
+            /* ▼ フォントサイズを画面幅(vw)で指定 ▼ */
+            font-size: 9vw; 
+            
             cursor: pointer;
             transition: background-color 0.3s, transform 0.3s;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         .card .front { display: none; }
         .card .back { 
             display: block; 
-            font-size: 50px; /* 裏面アイコンサイズも調整 */
+            /* ▼ 裏面も画面幅で指定 ▼ */
+            font-size: 10vw; 
             color: #80cbc4; 
         }
         /* ▲ ------------------- ▲ */
@@ -102,42 +125,51 @@
             border-radius: 8px;
             cursor: pointer;
         }
+
+        /* ▼ 画面が大きい時 (PCなど) は元のサイズ感に戻す ▼ */
+        @media (min-width: 500px) {
+            h1 { font-size: 1.75rem; } /* h1のデフォルトサイズ */
+            #game-info, #score-display, #turn-display {
+                font-size: 20px; /* 元のフォントサイズ */
+            }
+            #game-board {
+                gap: 10px; /* 元のすきま */
+            }
+            .card {
+                font-size: 40px; /* 元のフォントサイズ */
+            }
+            .card .back {
+                font-size: 50px; /* 元のフォントサイズ */
+            }
+        }
+        
     </style>
 </head>
 <body>
 
     <h1>🐈 猫の神経衰弱 (AI対戦版) 🐈</h1>
-
     <div id="game-info">
         <div id="score-display">あなた: 0 vs AI: 0</div>
         <div id="turn-display"></div>
     </div>
-
-    <div id="game-board">
-        </div>
-
+    <div id="game-board"></div>
     <div id="ui-container">
         <div id="result"></div>
         <button id="reset-button">スタート / リセット</button>
     </div>
 
     <script>
-        // JavaScript (AIのロジックはそのまま流用できます)
-
         const gameBoard = document.getElementById('game-board');
         const resultDisplay = document.getElementById('result');
         const resetButton = document.getElementById('reset-button');
         const scoreDisplay = document.getElementById('score-display');
         const turnDisplay = document.getElementById('turn-display');
 
-        // ▼▼▼ 【修正点】アイコンを12種類に増やす ▼▼▼
         const cardTypes = [
             '🐱', '🐟', '🥣', '🎀', '🔔', '🧶', 
             '🐈‍⬛', '🐭', '🥛', '📦', '🌙', '🧸'
         ];
-        // ▲▲▲ ---------------------------------- ▲▲▲
         
-        // cardArrayは自動的に24枚の配列になります
         let cardArray = [...cardTypes, ...cardTypes]; 
 
         let flippedCards = [];
@@ -149,7 +181,6 @@
         let currentPlayer = 'player';
         let aiMemory = {}; 
 
-        // --- 1. ゲーム開始/リセット ---
         function createBoard() {
             gameBoard.innerHTML = '';
             resultDisplay.textContent = '';
@@ -163,14 +194,12 @@
             updateScoreDisplay();
             shuffle(cardArray);
 
-            // 24枚のカードを生成
             cardArray.forEach((emoji, index) => {
                 const card = document.createElement('div');
                 card.classList.add('card');
                 card.dataset.emoji = emoji;
-                card.dataset.index = index; // 固有番号(0〜23)
+                card.dataset.index = index;
                 
-                // 裏面は 🐾
                 card.innerHTML = `
                     <span class="front">${emoji}</span>
                     <span class="back">🐾</span>
@@ -183,12 +212,10 @@
             switchTurn('player');
         }
 
-        // --- 2. カードシャッフル ---
         function shuffle(array) {
             array.sort(() => Math.random() - 0.5);
         }
 
-        // --- 3. カードクリック時の処理 (プレイヤー) ---
         function onCardClick() {
             if (lockBoard || 
                 this.classList.contains('matched') || 
@@ -197,7 +224,6 @@
             }
             this.classList.add('flipped');
             flippedCards.push(this);
-            // AIがこのカードを「記憶」する
             aiMemory[this.dataset.index] = this.dataset.emoji;
 
             if (flippedCards.length === 2) {
@@ -206,7 +232,6 @@
             }
         }
 
-        // --- 4. ペアの判定 ---
         function checkForMatch() {
             const [card1, card2] = flippedCards;
             const isMatch = card1.dataset.emoji === card2.dataset.emoji;
@@ -218,7 +243,6 @@
             }
         }
 
-        // --- 5. マッチした時の処理 ---
         function handleMatch(card1, card2) {
             card1.classList.add('matched');
             card2.classList.add('matched');
@@ -236,50 +260,43 @@
             flippedCards = [];
             lockBoard = false; 
 
-            // ゲーム終了判定 (24枚になったか)
             if (matchedCardIndexes.length === cardArray.length) {
                 endGame();
                 return;
             }
-
-            // マッチした場合、同じプレイヤーがもう一度
             if (currentPlayer === 'ai') {
-                setTimeout(aiTurn, 1000); // AIが連続で
+                setTimeout(aiTurn, 1000);
             }
         }
 
-        // --- 6. マッチしなかった時の処理 ---
         function handleMismatch(card1, card2) {
             card1.classList.remove('flipped');
             card2.classList.remove('flipped');
             flippedCards = [];
-            // ターン交代
             switchTurn(currentPlayer === 'player' ? 'ai' : 'player');
         }
 
-        // --- 7. ターン交代処理 ---
         function switchTurn(nextPlayer) {
             if (!isGameRunning) return;
             currentPlayer = nextPlayer;
             
             if (nextPlayer === 'player') {
                 turnDisplay.textContent = 'あなたの番です';
-                gameBoard.classList.add('player-turn'); // プレイヤー操作許可
+                gameBoard.classList.add('player-turn');
+
                 lockBoard = false;
             } else {
                 turnDisplay.textContent = 'AIの番です';
-                gameBoard.classList.remove('player-turn'); // プレイヤー操作禁止
+                gameBoard.classList.remove('player-turn');
                 lockBoard = true;
                 setTimeout(aiTurn, 1000); 
             }
         }
         
-        // --- 8. スコア表示更新 ---
         function updateScoreDisplay() {
             scoreDisplay.textContent = `あなた: ${playerScore} vs AI: ${aiScore}`;
         }
 
-        // --- 9. ゲーム終了処理 ---
         function endGame() {
             isGameRunning = false;
             lockBoard = true;
@@ -294,7 +311,6 @@
             }
         }
 
-        // --- 10. AIの思考と行動 ---
         function aiTurn() {
             if (!isGameRunning) return;
 
@@ -314,12 +330,9 @@
                 aiMemory[card2.dataset.index] = card2.dataset.emoji;
                 checkForMatch();
             }, 1200);
-Example
         }
 
-        // --- 11. AIのムーブ決定 (AIの「脳」) ---
         function findAiMove() {
-            // (1) 記憶の中で、まだマッチしていないカードでペアを探す
             let knownUnmatched = {};
             
             for (let i = 0; i < cardArray.length; i++) {
@@ -327,13 +340,12 @@ Example
                 if (aiMemory[i]) {
                     const emoji = aiMemory[i];
                     if (knownUnmatched[emoji]) {
-                        return [knownUnmatched[emoji], i]; // ペア発見！
+                        return [knownUnmatched[emoji], i]; 
                     }
                     knownUnmatched[emoji] = i;
                 }
             }
             
-            // (2) ペアが見つからなかった場合: ランダムに2枚選ぶ
             let availableCards = [];
             for (let i = 0; i < cardArray.length; i++) {
                 if (!matchedCardIndexes.includes(String(i)) && 
@@ -346,10 +358,7 @@ Example
             return [availableCards[0], availableCards[1]];
         }
 
-        // --- イベントリスナー ---
         resetButton.addEventListener('click', createBoard);
-
-        // --- 初期表示 ---
         turnDisplay.textContent = 'スタートしてね';
         
     </script>
