@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🐈 猫の神経衰弱 (AI対戦版・24枚)</title>
+    <title>🐈 猫の神経衰弱 (AI対戦版・4x6)</title>
     <style>
-        /* CSS (スマホ対応レイアウトに変更) */
+        /* CSS (4x6レイアウトに変更) */
         body {
             font-family: 'Arial', sans-serif;
             background-color: #e0f2f1;
@@ -14,36 +14,34 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            /* 縦が長くなるので100vhを解除 */
+            min-height: 100vh;
             margin: 0;
+            padding: 20px 0; /* 上下に余白 */
             user-select: none;
-            /* 画面全体の幅をはみ出さないように */
             overflow-x: hidden; 
         }
 
         h1 { 
             color: #00796b; 
             margin-top: 0; 
-            font-size: 26px; /* 少し小さく */
+            font-size: 26px;
         }
 
-        /* ▼ UI (幅を可変に) ▼ */
+        /* ▼ UI (幅を4列用に調整) ▼ */
         #game-info {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            /* ▼ 画面の95%の幅、ただし最大470pxまで ▼ */
+            /* ▼ 画面の95%、最大350pxに ▼ */
             width: 95%;
-            max-width: 470px; 
+            max-width: 350px; 
             margin-bottom: 10px;
         }
-
-        /* ▼ フォントサイズも少し調整 ▼ */
         #score-display { 
             font-size: 18px; 
             font-weight: bold; 
         }
-        
         #turn-display {
             font-size: 18px;
             font-weight: bold;
@@ -55,47 +53,40 @@
         /* ▲ ------------------- ▲ */
 
 
-        /* ▼ ボードのレイアウトを可変に ▼ */
+        /* ▼ ボードのレイアウトを 4x6 に変更 ▼ */
         #game-board {
             display: grid;
-            /* ▼ 6列の均等割り付け ▼ */
-            grid-template-columns: repeat(6, 1fr); 
-            /* ▼ 4行。高さは自動 ▼ */
-            grid-template-rows: repeat(4, auto);
-            /* ▼ すきまを少し狭く ▼ */
+            /* ▼ 4列の均等割り付け ▼ */
+            grid-template-columns: repeat(4, 1fr); 
+            /* ▼ 6行。高さは自動 ▼ */
+            grid-template-rows: repeat(6, auto);
             gap: 5px; 
             margin-bottom: 15px;
-            min-height: auto; /* 高さを自動に */
+            min-height: auto;
             pointer-events: none;
-            /* ▼ 画面の95%の幅、ただし最大470pxまで ▼ */
+            /* ▼ 画面の95%、最大350pxに ▼ */
             width: 95%;
-            max-width: 470px;
+            max-width: 350px;
         }
         /* ▲ ------------------- ▲ */
-
         
         #game-board.player-turn {
             pointer-events: auto;
         }
 
-        /* ▼ カードサイズを可変に ▼ */
+        /* ▼ カードサイズを可変に (4列用) ▼ */
         .card {
-            /* ▼ 幅は自動で1frの幅になる ▼ */
             width: 100%;
-            /* ▼ 高さを幅と同じにする (正方形にする) ▼ */
             aspect-ratio: 1 / 1; 
-            height: auto; /* 高さは自動 */
-
+            height: auto;
             background-color: #ffffff;
             border: 3px solid #4db6ac;
-            border-radius: 8px; /* 角丸を少し小さく */
+            border-radius: 8px;
             display: flex;
             justify-content: center;
             align-items: center;
-
-            /* ▼ フォントサイズを画面幅(vw)で指定 ▼ */
-            font-size: 9vw; 
-            
+            /* ▼ 4列なのでフォントサイズを少し大きく ▼ */
+            font-size: 12vw; 
             cursor: pointer;
             transition: background-color 0.3s, transform 0.3s;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
@@ -103,8 +94,8 @@
         .card .front { display: none; }
         .card .back { 
             display: block; 
-            /* ▼ 裏面も画面幅で指定 ▼ */
-            font-size: 10vw; 
+            /* ▼ 裏面も調整 ▼ */
+            font-size: 14vw; 
             color: #80cbc4; 
         }
         /* ▲ ------------------- ▲ */
@@ -126,20 +117,21 @@
             cursor: pointer;
         }
 
-        /* ▼ 画面が大きい時 (PCなど) は元のサイズ感に戻す ▼ */
+        /* ▼ 画面が大きい時 (PCなど) ▼ */
         @media (min-width: 500px) {
-            h1 { font-size: 1.75rem; } /* h1のデフォルトサイズ */
+            h1 { font-size: 1.75rem; }
             #game-info, #score-display, #turn-display {
-                font-size: 20px; /* 元のフォントサイズ */
+                font-size: 20px;
             }
             #game-board {
-                gap: 10px; /* 元のすきま */
+                gap: 10px; /* PCではすきまを広げる */
             }
             .card {
-                font-size: 40px; /* 元のフォントサイズ */
+                /* ▼ PCでは固定サイズに (4列x80px = 320 + 隙間30 = 350) ▼ */
+                font-size: 40px; 
             }
             .card .back {
-                font-size: 50px; /* 元のフォントサイズ */
+                font-size: 50px;
             }
         }
         
@@ -283,7 +275,6 @@
             if (nextPlayer === 'player') {
                 turnDisplay.textContent = 'あなたの番です';
                 gameBoard.classList.add('player-turn');
-
                 lockBoard = false;
             } else {
                 turnDisplay.textContent = 'AIの番です';
