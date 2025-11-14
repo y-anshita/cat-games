@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🐈 猫の顔スロット</title>
+    <style>
+        /* CSS (見た目を整えます) */
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f3e5f5; /* やさしい紫 */
+            color: #4a148c; /* 濃い紫 */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            user-select: none;
+        }
+
+        #game-container {
+            background-color: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            text-align: center;
+            width: 90%;
+            max-width: 450px;
+        }
+
+        h1 {
+            color: #ab47bc; /* 紫色 */
+            margin-top: 0;
+        }
+
+        /* ▼ リール（顔のパーツ）を縦に並べる ▼ */
+        #reels {
+            display: flex;
+            flex-direction: column; /* 縦積みにする */
+            align-items: center; /* 中央揃え */
+            margin: 20px 0;
+            background-color: #fafafa;
+            border: 5px solid #e1bee7; /* 薄紫 */
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        /* ▼ パーツのスタイル (顔文字を使うのでフォント指定) ▼ */
+        .reel {
+            font-family: 'monospace', 'MS PGothic', 'Osaka-mono', sans-serif;
+            font-size: 40px; /* 顔文字の大きさ */
+            font-weight: bold;
+            color: #5e35b1; /* パーツの色 */
+            width: 250px;
+            height: 60px;
+            line-height: 60px;
+            background-color: #ffffff;
+            border: 2px solid #eeeeee;
+            border-radius: 10px;
+            margin: 5px 0; /* パーツ間のすきま */
+            overflow: hidden;
+            text-align: center;
+        }
+
+        /* 結果表示エリア */
+        #result {
+            font-size: 24px;
+            font-weight: bold;
+            color: #d81b60; /* ピンク色 */
+            height: 30px;
+            margin: 20px 0;
+        }
+
+        /* ストップボタン (3つ横並び) */
+        #controls {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            gap: 10px; /* ボタン間のすきま */
+        }
+
+        .stop-button {
+            font-size: 14px;
+            padding: 10px 10px;
+            width: 100px;
+            background-color: #4fc3f7; /* 水色 */
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .stop-button:disabled {
+            background-color: #b0bec5; /* グレー */
+        }
+
+        #start-button {
+            font-size: 20px;
+            padding: 15px 30px;
+            width: 100%;
+            background-color: #66bb6a; /* 緑色 */
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        #start-button:disabled {
+            background-color: #b0bec5;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <h1>🐈 猫の顔スロット 🐈</h1>
+
+        <div id="reels">
+            <div class="reel" id="reel-eye">(^.^)</div> <div class="reel" id="reel-nose">( ◈ )</div> <div class="reel" id="reel-mouth">( _ )</div> </div>
+
+        <div id="result"></div>
+
+        <div id="controls">
+            <button class="stop-button" id="stop-eye" disabled>目のストップ</button>
+            <button class="stop-button" id="stop-nose" disabled>鼻のストップ</button>
+            <button class="stop-button" id="stop-mouth" disabled>口のストップ</button>
+        </div>
+
+        <button id="start-button">スタート！</button>
+    </div>
+
+    <script>
+        // JavaScript (スロットのロジックを変更)
+
+        // --- 1. パーツの定義 (各4種類) ---
+        const eyes = ['(^.^)', '(o_o)', '(>.<)', '(*_*)'];
+        const noses = ['( ◈ )', '( o )', '( 3 )', '( . )'];
+        const mouths = ['( _ )', '( w )', '( ▽ )', '( U )'];
+
+        // --- 表情の辞書 ---
+        const eyeDescriptions = {
+            '(^.^)': 'にこにこ',
+            '(o_o)': 'びっくり',
+            '(>.<)': 'こまった',
+            '(*_*)': 'キラキラ'
+        };
+        const mouthDescriptions = {
+            '( _ )': 'むっ',
+            '( w )': 'にぱー',
+            '( ▽ )': 'わー',
+            '( U )': 'うふふ'
+        };
+
+        // --- 2. HTMLの要素を取得 ---
+        const reelEye = document.getElementById('reel-eye');
+        const reelNose = document.getElementById('reel-nose');
+        const reelMouth = document.getElementById('reel-mouth');
+
+        const stopEye = document.getElementById('stop-eye');
+        const stopNose = document.getElementById('stop-nose');
+        const stopMouth = document.getElementById('stop-mouth');
+        
+        const startButton = document.getElementById('start-button');
+        const resultDiv = document.getElementById('result');
+
+        // --- 3. リールの状態を管理する変数 ---
+        let intervalEye, intervalNose, intervalMouth;
+        let isSpinningEye = false;
+        let isSpinningNose = false;
+        let isSpinningMouth = false;
+
+        // --- 4. ランダムにパーツを選ぶ関数 ---
+        function getRandomPart(partsArray) {
+            const index = Math.floor(Math.random() * partsArray.length);
+            return partsArray[index];
+        }
+
+        // --- 5. スタートボタンが押されたときの処理 ---
+        startButton.addEventListener('click', () => {
+            if (intervalEye) clearInterval(intervalEye);
+            if (intervalNose) clearInterval(intervalNose);
+            if (intervalMouth) clearInterval(intervalMouth);
+
+            isSpinningEye = true;
+            isSpinningNose = true;
+            isSpinningMouth = true;
+
+            startButton.disabled = true;
+            stopEye.disabled = false;
+            stopNose.disabled = false;
+            stopMouth.disabled = false;
+
+            resultDiv.textContent = ''; // 結果をリセット
+
+            // 各リールを回転 (0.05秒ごとにパーツを変える)
+            intervalEye = setInterval(() => {
+                reelEye.textContent = getRandomPart(eyes);
+            }, 50);
+
+            intervalNose = setInterval(() => {
+                reelNose.textContent = getRandomPart(noses);
+            }, 50);
+
+            intervalMouth = setInterval(() => {
+                reelMouth.textContent = getRandomPart(mouths);
+            }, 50);
+        });
+
+        // --- 6. 各ストップボタンの処理 ---
+        stopEye.addEventListener('click', () => {
+            clearInterval(intervalEye);
+            isSpinningEye = false;
+            stopEye.disabled = true;
+            checkAllStopped();
+        });
+
+        stopNose.addEventListener('click', () => {
+            clearInterval(intervalNose);
+            isSpinningNose = false;
+            stopNose.disabled = true;
+            checkAllStopped();
+        });
+
+        stopMouth.addEventListener('click', () => {
+            clearInterval(intervalMouth);
+            isSpinningMouth = false;
+            stopMouth.disabled = true;
+            checkAllStopped();
+        });
+
+        // --- 7. すべてのリールが止まったかチェックする関数 ---
+        function checkAllStopped() {
+            // 1つでも回転中なら何もしない
+            if (isSpinningEye || isSpinningNose || isSpinningMouth) {
+                return;
+            }
+
+            // 3つとも止まっていたら、結果を表示
+            const finalEye = reelEye.textContent;
+            const finalMouth = reelMouth.textContent;
+
+            const desc1 = eyeDescriptions[finalEye] || 'ふしぎ';
+            const desc2 = mouthDescriptions[finalMouth] || 'な';
+
+            resultDiv.textContent = `「${desc1}」で「${desc2}」顔の猫だ！`;
+            
+            // スタートボタンを再度有効化
+            startButton.disabled = false;
+        }
+    </script>
+
+</body>
+</html>
