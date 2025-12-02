@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ブラウザ上海</title>
+    <style>
+        body {
+            background-color: #004d40; /* 雀卓のような深い緑 */
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        h1 {
+            margin: 10px 0;
+            font-size: 24px;
+            text-shadow: 2px 2px 4px black;
+        }
+
+        .controls {
+            margin-bottom: 10px;
+            display: flex;
+            gap: 15px;
+            z-index: 100;
+        }
+
+        button {
+            padding: 8px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background: #fff;
+            border: none;
+            border-radius: 5px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            transition: transform 0.1s;
+        }
+        button:active {
+            transform: translateY(2px);
+        }
+
+        /* ゲーム盤エリア */
+        #game-container {
+            position: relative;
+            width: 960px; /* 盤面の基本サイズ */
+            height: 640px;
+            /* 画面サイズに合わせて縮小するための設定 */
+            transform-origin: top center;
+            margin-top: 10px;
+        }
+
+        /* 麻雀牌のスタイル */
+        .tile {
+            position: absolute;
+            width: 46px;  /* 牌の幅 */
+            height: 64px; /* 牌の高さ */
+            background: linear-gradient(to bottom, #fff 85%, #e0e0e0 100%);
+            border-radius: 6px;
+            box-shadow: 
+                3px 3px 0px #aaa,      /* 牌の側面（厚み） */
+                4px 4px 0px #888,      /* 牌の側面（影） */
+                6px 6px 5px rgba(0,0,0,0.5); /* 全体の影 */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 38px;
+            cursor: pointer;
+            transition: transform 0.1s, filter 0.2s;
+            z-index: 1; /* 基本 */
+            color: #333;
+        }
+
+        /* 牌の文字色調整 */
+        .tile[data-suit="man"] { color: #b30000; } /* 萬子 */
+        .tile[data-suit="pin"] { color: #0050b3; } /* 筒子 */
+        .tile[data-suit="sou"] { color: #008000; } /* 索子 */
+        .tile[data-suit="honor"] { color: #000; }  /* 字牌（一部赤にする処理はJSで） */
+        .tile[data-val="🀄"] { color: #d60000; } /* 中 */
+        .tile[data-val="🀅"] { color: #008000; } /* 発 */
+
+        /* 選択できない牌（暗くする） */
+        .tile.blocked {
+            filter: brightness(0.7);
+            cursor: default;
+        }
+
+        /* 選択中の牌 */
+        .tile.selected {
+            transform: translate(-2px, -2px);
+            box-shadow: 
+                3px 3px 0px #ffeb3b,
+                5px 5px 0px #fbc02d,
+                8px 8px 8px rgba(0,0,0,0.6);
+            border: 2px solid #ffeb3b;
+            filter: brightness(1.1);
+            z-index: 1000 !important; /* 最前面へ */
+        }
+
+        /* ヒント表示時の強調 */
+        .tile.hint {
+            animation: flash 1s infinite;
+        }
+
+        @keyframes flash {
+            0% { filter: brightness(1); }
+            50% { filter: brightness(1.5) sepia(1) hue-rotate(-50deg); } /* 金色っぽく光る */
+            100% { filter: brightness(1); }
+        }
+
+        #message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.85);
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            display: none;
+            z-index: 2000;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>SHANGHAI - JS</h1>
+    
+    <div class="controls">
+        <span id="status">残り: 144</span>
+        <button onclick="initGame()">リセット</button>
+        <button onclick="showHint()">ヒント</button>
+    </div>
+
+    <div id="game-container">
+        <!-- 牌はここにJavaScriptで生成されます -->
+    </div>
+
+    <div id="message">
+        <h2 id="msg-title">GAME CLEAR!</h2>
+        <button onclick="initGame()">もう一度遊ぶ</button>
+    </div>
+
+<script>
+    // --- 設定定数 ---
+    const TILE_W = 50; // グリッド上の幅（実際のCSS幅とは少し異なる）
+    const TILE_H = 70; // グリッド上の高さ
+    
+    // 牌の種類定義 (合計34種 * 4枚 = 136枚) 
+    // ※簡単にするため花牌・季節牌は除外して、標準牌のみの136枚構成にするか、
+    // あるいは標準136 + 余り8枚のバランス調整を行う。
+    // ここでは、標準的な34種×4枚＝136枚 + 予備として適当な牌を重複させて計144枚にします。
+    const TILES_DEF = [
+        { type: 'man', chars: ['🀇','🀈','🀉','🀊','🀋','🀌','🀍','🀎','🀏'] }, // 萬子 1-9
+        { type: 'pin', chars: ['🀙','🀚','🀛','🀜','🀝','🀞','🀟','🀠','🀡'] }, // 筒子 1-9
+        { type: 'sou', chars: ['🀐','🀑','🀒','🀓','🀔','🀕','🀖','🀗','🀘'] }, // 索子 1-9
+        { type: 'honor', chars: ['🀀','🀁','🀂','🀃','🀆','🀅','🀄'] }        // 東南西北白發中
+    ];
+
+    // ゲーム状態
+    let tiles = []; // 生成された牌オブジェクトの配列
+    let selectedTile = null;
+    let tilesLeft = 144;
+
+    const container = document.getElementById('game-container');
+    const statusText = document.getElementById('status');
+    const messageBox = document.getElementById('message');
+
+    // --- マップ定義 (亀の甲羅配列) ---
+    // x, yはグリッド座標(0.5単位も考慮して整数で扱う。1単位=牌の半分の幅)。
+    // 実際の描画位置: left = x * (TILE_W/2), top = y * (TILE_H/2)
+    // zは重なり順。
+    
+    function getTurtleLayout() {
+        const layout = [];
+        // Layer 0 (Base): 12x8 ブロック (角を削るなどの形状)
+        // x: 2〜26, y: 2〜16 (偶数座標使用)
+        // 中央揃えにするため適当にオフセット
+        // 基本ブロック: 30枚
+        for(let x=2; x<=24; x+=2) { // 12列
+            for(let y=2; y<=14; y+=2) { // 7行
+                // 四隅を削る簡単なロジック (上海の形状に近づける)
+                // 完全な長方形から、特定の角を除く
+                if((x===2 && (y===2 || y===14)) || (x===24 && (y===2 || y===14))) continue;
+                
+                // 中央付近の盛り上がり用に一部スキップするのはLayerの役目
+                // ここではベースを敷く
+                layout.push({x: x, y: y, z: 0});
+            }
+        }
+        // ベースの左右に飛び出た部分 (x=0, x=26, y=8あたり)
+        layout.push({x: 0, y: 8, z: 0});
+        layout.push({x: 26, y: 8, z: 0});
+        layout.push({x: 28, y: 8, z: 0}); // 右端さらにひとつ
+
+        // Layer 1: 6x6 (36枚)
+        for(let x=8; x<=18; x+=2) {
+            for(let y=4; y<=12; y+=2) {
+                layout.push({x: x, y: y, z: 1});
+            }
+        }
+
+        // Layer 2: 4x4 (16枚)
+        for(let x=10; x<=16; x+=2) {
+            for(let y=6; y<=10; y+=2) {
+                layout.push({x: x, y: y, z: 2});
+            }
+        }
+
+        // Layer 3: 2x2 (4枚)
+        for(let x=12; x<=14; x+=2) {
+            for(let y=7; y<=9; y+=2) { // 少し中央寄せ
+               layout.push({x: x, y: y, z: 3});
+            }
+        }
+
+        // Layer 4: Top (1枚)
+        layout.push({x: 13, y: 8, z: 4});
+
+        // ※上記のロジックだと枚数が144にぴったり合わない可能性があるため、
+        // 144枚になるように調整します。
+        // 現在の構成でおよそ144前後になりますが、足りない/多い場合はカットor追加します。
+        // プログラム的に配列をカットして144枚にします。
+        return layout.slice(0, 144);
+    }
+    
+    // --- 初期化 ---
+    function initGame() {
+        // リセット
+        container.innerHTML = '';
+        messageBox.style.display = 'none';
+        selectedTile = null;
+        tiles = [];
+        
+        // 牌セット生成
+        // 144枚分の値を生成（ペアになるように）
+        let deck = [];
+        let allChars = [];
+        TILES_DEF.forEach(cat => {
+            cat.chars.forEach(c => {
+                allChars.push({char: c, type: cat.type});
+            });
+        });
+
+        // 34種 * 4 = 136枚
+        for(let i=0; i<4; i++) {
+            deck = deck.concat(allChars);
+        }
+        // 足りない8枚分を適当に追加 (春夏秋冬、梅蘭菊竹の代わりに普通の牌を追加)
+        // ランダムに8ペア選んで追加
+        for(let i=0; i<4; i++) { // 4ペア = 8枚
+            let r = Math.floor(Math.random() * allChars.length);
+            deck.push(allChars[r]);
+            deck.push(allChars[r]);
+        }
+
+        // シャッフル
+        shuffleArray(deck);
+
+        // レイアウト取得
+        const layout = getTurtleLayout();
+
+        // 牌配置
+        // レイアウトの数が144とずれる場合の安全策
+        const limit = Math.min(layout.length, deck.length);
+        tilesLeft = limit;
+        statusText.innerText = `残り: ${tilesLeft}`;
+
+        for (let i = 0; i < limit; i++) {
+            const pos = layout[i];
+            const val = deck[i];
+            
+            const el = document.createElement('div');
+            el.className = 'tile';
+            el.innerText = val.char;
+            el.dataset.val = val.char;
+            el.dataset.suit = val.type;
+            el.dataset.id = i;
+            
+            // 位置設定 (x1単位=25px, y1単位=35pxくらい)
+            // x,yは2刻みのグリッドなので、x/2 * 50px のようになる
+            const left = pos.x * (TILE_W / 2) + 20; // 余白
+            const top = pos.y * (TILE_H / 2) + 20;
+            
+            el.style.left = `${left}px`;
+            el.style.top = `${top}px`;
+            el.style.zIndex = 10 + pos.z; // z-index設定
+
+            // クリックイベント
+            el.onclick = (e) => {
+                e.stopPropagation();
+                handleTileClick(i);
+            };
+
+            container.appendChild(el);
+
+            tiles.push({
+                id: i,
+                x: pos.x,
+                y: pos.y,
+                z: pos.z,
+                val: val.char,
+                el: el,
+                active: true
+            });
+        }
+        
+        // 画面リサイズ対応
+        resizeBoard();
+        updateBlockedStatus();
+    }
+
+    // --- ゲームロジック ---
+
+    // クリック処理
+    function handleTileClick(id) {
+        const tile = tiles[id];
+        if (!tile.active) return;
+        if (isBlocked(tile)) return; // ブロックされていたら反応しない
+
+        if (selectedTile) {
+            if (selectedTile.id === tile.id) {
+                // 同じ牌をクリック -> キャンセル
+                deselect();
+            } else {
+                // 違う牌をクリック -> マッチ判定
+                if (tile.val === selectedTile.val) {
+                    // マッチ成功
+                    removeTile(selectedTile);
+                    removeTile(tile);
+                    deselect();
+                    checkWin();
+                } else {
+                    // マッチ失敗 -> 選択切り替え
+                    deselect();
+                    select(tile);
+                }
+            }
+        } else {
+            // 新規選択
+            select(tile);
+        }
+    }
+
+    function select(tile) {
+        selectedTile = tile;
+        tile.el.classList.add('selected');
+    }
+
+    function deselect() {
+        if (selectedTile) {
+            selectedTile.el.classList.remove('selected');
+            selectedTile = null;
+        }
+    }
+
+    function removeTile(tile) {
+        tile.active = false;
+        tile.el.style.display = 'none'; // DOMからは消さず非表示に
+        tilesLeft--;
+        statusText.innerText = `残り: ${tilesLeft}`;
+        
+        // 牌が消えたので、他の牌のロック状態が変わる可能性がある
+        updateBlockedStatus();
+    }
+
+    // 重要：牌が選択可能か判定する
+    function isBlocked(target) {
+        // 条件1: 上に牌があるか (z + 1 で、座標が重なっている)
+        // 条件2: 左右両方に牌があるか (zが同じで、xが隣接)
+        
+        let blockedByTop = false;
+        let blockedByLeft = false;
+        let blockedByRight = false;
+
+        // 牌のサイズはグリッド上で width:2, height:2 とみなす
+        const tL = target.x;
+        const tR = target.x + 2;
+        const tT = target.y;
+        const tB = target.y + 2;
+
+        for (let other of tiles) {
+            if (!other.active || other.id === target.id) continue;
+
+            // 上にあるかチェック
+            if (other.z === target.z + 1) {
+                // 矩形の重なり判定
+                // otherの範囲
+                const oL = other.x;
+                const oR = other.x + 2;
+                const oT = other.y;
+                const oB = other.y + 2;
+
+                // 重なり判定: !(Left > Right || Right < Left || Top > Bottom || Bottom < Top)
+                if (tL < oR && tR > oL && tT < oB && tB > oT) {
+                    blockedByTop = true;
+                }
+            }
+
+            // 左右チェック (同じ高さ)
+            if (other.z === target.z) {
+                // Y軸の重なりがあるか (yが近いか)
+                // 縦方向のズレが2未満なら隣接とみなす
+                if (Math.abs(other.y - target.y) < 2) {
+                    // 左隣: otherの右端(x+2) が targetの左端(x) に接するか食い込む
+                    // 厳密には Shanghai は x座標の差が2以内で判定
+                    if (other.x === target.x - 2) blockedByLeft = true;
+                    // 右隣
+                    if (other.x === target.x + 2) blockedByRight = true;
+                }
+            }
+        }
+
+        // 上に乗られている、または (左が塞がっている かつ 右が塞がっている)
+        // ※上海のルール：左右「どちらか」が空いていればOK。
+        // つまり、左右「両方」塞がっているとNG。
+        return blockedByTop || (blockedByLeft && blockedByRight);
+    }
+
+    // 全牌の状態更新（見た目のため）
+    function updateBlockedStatus() {
+        tiles.forEach(t => {
+            if (!t.active) return;
+            if (isBlocked(t)) {
+                t.el.classList.add('blocked');
+            } else {
+                t.el.classList.remove('blocked');
+            }
+        });
+    }
+
+    // ヒント機能
+    function showHint() {
+        // 選択可能な牌のペアを探す
+        // まずフリーな牌をリストアップ
+        const freeTiles = tiles.filter(t => t.active && !isBlocked(t));
+        
+        // ペア探索
+        for (let i = 0; i < freeTiles.length; i++) {
+            for (let j = i + 1; j < freeTiles.length; j++) {
+                if (freeTiles[i].val === freeTiles[j].val) {
+                    // 見つかった
+                    flashTile(freeTiles[i]);
+                    flashTile(freeTiles[j]);
+                    return;
+                }
+            }
+        }
+        alert("消せる牌がありません！手詰まりです。リセットしてください。");
+    }
+
+    function flashTile(tile) {
+        tile.el.classList.add('hint');
+        setTimeout(() => tile.el.classList.remove('hint'), 2000);
+    }
+
+    function checkWin() {
+        if (tilesLeft === 0) {
+            document.getElementById('msg-title').innerText = "GAME CLEAR!";
+            messageBox.style.display = 'block';
+        }
+    }
+
+    // ユーティリティ
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+    }
+
+    function resizeBoard() {
+        // 画面幅に合わせて盤面を縮小
+        const scale = Math.min(1, (window.innerWidth - 20) / 960);
+        container.style.transform = `scale(${scale})`;
+    }
+
+    window.addEventListener('resize', resizeBoard);
+
+    // 開始
+    initGame();
+
+</script>
+</body>
+</html>
