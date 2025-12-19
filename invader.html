@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>簡易インベーダーゲーム</title>
+    <title>ねこだま的インベーダーゲーム</title>
     <style>
         body {
             background-color: #222;
@@ -29,7 +29,7 @@
 </head>
 <body>
 
-    <h1>SPACE INVADERS - JS</h1>
+    <h1>ねこだま的 スペースインベーダー</h1>
     <canvas id="gameCanvas" width="600" height="400"></canvas>
     <div class="controls">
         <p>操作方法: [←][→] 移動 | [SPACE] 発射</p>
@@ -46,14 +46,18 @@
     let gameState = 'START'; // START, PLAYING, GAMEOVER
     let score = 0;
     
-    // プレイヤー設定
+// ★追加：画像の読み込み
+    const playerImage = new Image();
+    playerImage.src = 'neko_jyuwomotutyaneko1.png'; // 画像のファイル名に合わせてください
+
+    // プレイヤー設定（サイズを画像に合わせて調整）
     const player = {
-        x: canvas.width / 2 - 15,
-        y: canvas.height - 30,
-        width: 30,
-        height: 10,
+        x: canvas.width / 2 - 20, // 幅が増えた分、開始位置を調整
+        y: canvas.height - 50,    // 画像の高さに合わせて少し上に配置
+        width: 40,                // 画像の幅（好みのサイズに）
+        height: 40,               // 画像の高さ
         speed: 5,
-        color: '#00ff00',
+        color: '#00ff00',         // 画像を使うので色は無視されますが残しておきます
         bullets: []
     };
 
@@ -234,11 +238,9 @@
     function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // プレイヤー描画
-        ctx.fillStyle = player.color;
-        ctx.fillRect(player.x, player.y, player.width, player.height);
-        // プレイヤーの砲台部分（見た目用）
-        ctx.fillRect(player.x + 12, player.y - 5, 6, 5);
+        // プレイヤー描画（画像に変更）
+        // ctx.drawImage(画像, x, y, 幅, 高さ)
+        ctx.drawImage(playerImage, player.x, player.y, player.width, player.height);
 
         // 弾描画
         ctx.fillStyle = '#ffff00';
