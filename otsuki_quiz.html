@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>大月町 2択クイズ</title>
+    <style>
+        :root {
+            --primary-color: #00a8cc; /* 大月の海のような青 */
+            --accent-color: #ff8c00; /* 夕日やミカンのオレンジ */
+            --bg-color: #f0f8ff;
+            --text-color: #333;
+        }
+
+        body {
+            font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        #game-container {
+            background: white;
+            width: 100%;
+            max-width: 600px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            overflow: hidden;
+            text-align: center;
+            padding: 30px;
+            position: relative;
+        }
+
+        /* --- 共通スタイル --- */
+        h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+        }
+
+        .btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.1s, opacity 0.2s;
+            font-weight: bold;
+            display: inline-block;
+            margin-top: 20px;
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* --- スタート画面 --- */
+        #cat-icon {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 20px;
+        }
+        
+        .cat-face { fill: #fff; stroke: #333; stroke-width: 3; }
+        .cat-eyes { fill: #333; }
+        .cat-nose { fill: pink; }
+        .cat-mouth { fill: none; stroke: #333; stroke-width: 3; stroke-linecap: round; }
+        .cat-ears { fill: #fff; stroke: #333; stroke-width: 3; }
+        .neko-badge {
+            font-size: 14px;
+            background: #eee;
+            color: #666;
+            padding: 5px 10px;
+            border-radius: 10px;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+
+        /* --- クイズ画面 --- */
+        #question-counter {
+            font-size: 14px;
+            color: #888;
+            margin-bottom: 10px;
+        }
+
+        #question-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: var(--accent-color);
+        }
+
+        #question-text {
+            font-size: 18px;
+            margin-bottom: 30px;
+            line-height: 1.6;
+            min-height: 60px;
+        }
+
+        .options-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .option-btn {
+            background: white;
+            border: 2px solid var(--primary-color);
+            color: var(--primary-color);
+            padding: 15px;
+            font-size: 18px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .option-btn:hover {
+            background: #e0f7fa;
+        }
+
+        /* 正解・不正解時のスタイル */
+        .option-btn.correct {
+            background: #4CAF50;
+            color: white;
+            border-color: #4CAF50;
+        }
+        .option-btn.wrong {
+            background: #F44336;
+            color: white;
+            border-color: #F44336;
+            opacity: 0.6;
+        }
+
+        /* 解説エリア */
+        #explanation-area {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 10px;
+            border-left: 5px solid var(--accent-color);
+            text-align: left;
+        }
+        #result-message {
+            font-weight: bold;
+            font-size: 20px;
+            margin-bottom: 10px;
+            display: block;
+            text-align: center;
+        }
+        .correct-msg { color: #4CAF50; }
+        .wrong-msg { color: #F44336; }
+
+        /* --- 結果画面 --- */
+        #final-score {
+            font-size: 48px;
+            color: var(--accent-color);
+            font-weight: bold;
+            margin: 20px 0;
+        }
+        #final-comment {
+            font-size: 18px;
+            line-height: 1.6;
+        }
+
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <!-- スタート画面 -->
+    <div id="start-screen">
+        <span class="neko-badge">ねこだまプロジェクト</span>
+        <!-- 可愛いネコのアイコン（SVG） -->
+        <div id="cat-icon">
+            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <!-- 耳 -->
+                <polygon points="20,30 20,10 45,25" class="cat-ears" />
+                <polygon points="80,30 80,10 55,25" class="cat-ears" />
+                <!-- 顔の輪郭 -->
+                <circle cx="50" cy="55" r="35" class="cat-face" />
+                <!-- 目 -->
+                <circle cx="38" cy="48" r="4" class="cat-eyes" />
+                <circle cx="62" cy="48" r="4" class="cat-eyes" />
+                <!-- 鼻 -->
+                <ellipse cx="50" cy="58" rx="3" ry="2" class="cat-nose" />
+                <!-- 口 -->
+                <path d="M42,63 Q50,68 58,63" class="cat-mouth" fill="none" />
+                <!-- ほっぺ（ピンク） -->
+                <circle cx="30" cy="60" r="5" fill="#ffccd5" opacity="0.6" />
+                <circle cx="70" cy="60" r="5" fill="#ffccd5" opacity="0.6" />
+            </svg>
+        </div>
+        <h1>大月町を知ろう！<br>2択クイズ</h1>
+        <p>全20問の中からランダムで10問出題。<br>あなたは大月町マスターになれるかな？</p>
+        <button class="btn" onclick="startGame()">クイズを始める</button>
+    </div>
+
+    <!-- クイズ画面 -->
+    <div id="quiz-screen" class="hidden">
+        <div id="question-counter">第 1 問 / 全 10 問</div>
+        <div id="question-title">タイトル</div>
+        <div id="question-text">ここに問題文が表示されます。</div>
+        
+        <div class="options-container">
+            <button class="option-btn" id="btn-opt1" onclick="checkAnswer(1)"></button>
+            <button class="option-btn" id="btn-opt2" onclick="checkAnswer(2)"></button>
+        </div>
+
+        <div id="explanation-area" class="hidden">
+            <span id="result-message"></span>
+            <div id="explanation-text"></div>
+            <div style="text-align: center;">
+                <button class="btn" id="next-btn" onclick="nextQuestion()">次へ</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 結果画面 -->
+    <div id="result-screen" class="hidden">
+        <h1>結果発表</h1>
+        <p>あなたのスコアは...</p>
+        <div id="final-score">0点</div>
+        <p id="final-comment"></p>
+        <button class="btn" onclick="startGame()">もう一度挑戦する</button>
+    </div>
+</div>
+
+<script>
+    // --- 問題データ (全20問) ---
+    const allQuestions = [
+        // 絶景・自然編
+        { title: "柏島の不思議な光景", q: "SNSで「まるで船が宙に浮いているよう」と話題になった柏島の海の秘密はどっち？", opts: ["海水の透明度が極めて高いから", "特殊な浮力を持つ海水だから"], ans: 0, exp: "柏島の海は、黒潮の影響で不純物が少なく、大きな河川の流入もないため、平均20m、最大で40mという沖縄の離島並みの透明度を誇ります。" },
+        { title: "魚の種類", q: "柏島周辺には、日本で見られる魚の種類の約何分の1が生息している？", opts: ["約10分の1", "約3分の1"], ans: 1, exp: "柏島周辺は暖流と寒流が交差するため非常に魚種が豊富で、日本に生息する全魚種の約3分の1にあたる約1,000〜1,150種類以上が確認されています。" },
+        { title: "観音岩の由来", q: "大堂海岸にある高さ30mの巨大な岩柱「観音岩」。その名前の由来は？", opts: ["海に向かって祈る観音様に見えるから", "昔、観音経が刻まれていたから"], ans: 0, exp: "花崗岩の断崖にそびえ立つ石柱が、海に向かって祈る観音菩薩のように見えることから名付けられました。" },
+        { title: "柏島への道", q: "大月半島と柏島は、現在何本の橋でつながっている？", opts: ["1本", "2本"], ans: 1, exp: "柏島は、大月半島と新旧2本の橋で結ばれています。" },
+        { title: "国立公園の名称", q: "大月町の海岸線が指定されている国立公園の正しい名前はどっち？", opts: ["足摺宇和海国立公園", "土佐湾国立公園"], ans: 0, exp: "大月町の海岸部は、リアス式海岸やサンゴ礁など豊かな自然が広がる「足摺宇和海（あしずりうわかい）国立公園」に指定されています。" },
+
+        // グルメ・特産品編
+        { title: "本マグロの養殖", q: "高知県内で唯一、本マグロ（クロマグロ）の養殖を行っている自治体は？", opts: ["高知市", "大月町"], ans: 1, exp: "大月町は高知県内で唯一、本マグロの養殖を行っており、その生産量は全国3位を誇ります。" },
+        { title: "伝統の「鰤ヘラ寿司」", q: "文化庁の「100年フード」にも認定された「鰤（ぶり）ヘラ寿司」。名前の由来はどっち？", opts: ["漁師が使う道具の「ヘラ」に形が似ているから", "「ほっぺた（ヘラ）が落ちる」から"], ans: 0, exp: "漁師たちが日常的に使っていた道具の「ヘラ」に形が似ていたことからその名がついたと言われています。" },
+        { title: "ブランド豚「力豚」", q: "大月町のブランド豚「力豚（りきぶた）」の美味しさの秘密は？", opts: ["オガクズと土着菌の「発酵床」で育てるから", "毎日天然のマグロを食べて育つから"], ans: 0, exp: "土着菌が排泄物を分解する「発酵床」という清潔な環境で健康的に育つため、脂身が甘く高品質な肉質になります。" },
+        { title: "干し芋スイーツ「ひがしやま」", q: "大月町名産の「ひがしやま」に使われる、中がオレンジ色のさつまいもの品種は？", opts: ["紅ハヤト", "安納芋"], ans: 0, exp: "大月町産の「紅ハヤト」と水だけを使い、長時間煮込んで天日干しにすることで、独特の粘りと甘みが生まれます。" },
+        { title: "道の駅のスイーツ", q: "道の駅大月などで人気の、凍らせた苺をそのまま削ったスイーツの名前は？", opts: ["苺しぐれ", "苺氷り（いちごおり）"], ans: 1, exp: "フレッシュな苺を閉じ込めた氷を薄く削った「苺氷り」は、ふわっとした口溶けが特徴のご当地スイーツです。" },
+
+        // 文化・伝統編
+        { title: "太刀踊りのルーツ", q: "大月町の無形文化財「太刀踊り（たちおどり）」を伝えたとされるのは誰？", opts: ["平家の落人", "四国遍路の僧侶"], ans: 0, exp: "壇ノ浦の合戦に敗れて赤泊地区に辿り着いた平家の落人によって伝えられたという伝説があります。" },
+        { title: "冬の祭り「水浴びせ」", q: "毎年1月2日に古満目地区で行われる、火災を防ぐための伝統行事はどっち？", opts: ["水浴びせ", "火渡り"], ans: 0, exp: "江戸時代の大火を機に始まった行事で、若者が極寒の中で海水を浴びて防火を祈願します。" },
+        { title: "獅子舞の練習", q: "「竜ヶ迫唐獅子おどり」の若者たちが、明治時代に獅子頭の代わりに練習で使ったものは？", opts: ["ザル", "鍋の蓋"], ans: 1, exp: "獅子頭が届くまでの間、若者たちは鍋の蓋を代わりにして必死に練習したというエピソードが残っています。" },
+        { title: "秋のビッグイベント", q: "毎年11月3日に開催され、限定1,000食のマグロ丼が人気のイベントは？", opts: ["マグロまつり", "柏島大漁祭"], ans: 0, exp: "「マグロまつり in 大月町産業祭」では、大月町産の本マグロが格安で提供されるなど、町最大の食の祭典となります。" },
+        { title: "歴史の「音無神社」", q: "赤泊地区にある音無神社。平家ゆかりの神社として特徴的な外観の色はどっち？", opts: ["純白", "朱色（赤色）"], ans: 1, exp: "平家の軍旗（赤旗）を連想させる鮮やかな朱色に塗られているのが特徴です。" },
+
+        // 言葉・暮らし編
+        { title: "幡多弁の「ちゃがまる」", q: "大月町を含む幡多地域で「機械がちゃがまった」と言ったら、どういう意味？", opts: ["機械が新しくなった", "機械が故障した"], ans: 1, exp: "「ちゃがまる」は「壊れる・故障する」という意味の、インパクトのある幡多弁です。" },
+        { title: "幡多弁の「ざまに」", q: "地元の方が「今日はざまにえい魚がある」と言いました。「ざまに」の意味は？", opts: ["すごく、たくさん", "少しだけ"], ans: 0, exp: "「ざまに」または「ざま」は、量や程度が非常に大きいことを表す言葉です。" },
+        { title: "アクセントの違い", q: "高知市などの「土佐弁」と大月町の「幡多弁」。より標準語に近いアクセントを持つのはどっち？", opts: ["土佐弁", "幡多弁"], ans: 1, exp: "土佐弁が京阪式アクセントなのに対し、幡多弁は「東京式アクセント」に近く、やわらかい響きが特徴です。" },
+        { title: "鉄道の最寄り駅", q: "大月町に鉄道は通っていませんが、公共交通機関で訪れる際の「鉄道の終着駅」となる最寄り駅は？", opts: ["中村駅", "宿毛駅"], ans: 1, exp: "土佐くろしお鉄道の終着駅、宿毛（すくも）駅からバスや車で約30〜45分で大月町に到着します。" },
+        { title: "キャンプ場", q: "「海まで徒歩30秒」でシュノーケリングも楽しめる、大月町の人気キャンプ場はどっち？", opts: ["竜ヶ浜キャンプ場", "樫西キャンプ場"], ans: 0, exp: "竜ヶ浜（りゅうがはま）キャンプ場は、目の前が熱帯魚の泳ぐ海という抜群のロケーションで、ファミリーに大人気です。" }
+    ];
+
+    // --- ゲームの状態変数 ---
+    let currentQuestions = []; // 今回出題する10問
+    let currentIndex = 0;
+    let score = 0;
+    const maxQuestions = 10;
+
+    // --- DOM要素 ---
+    const startScreen = document.getElementById('start-screen');
+    const quizScreen = document.getElementById('quiz-screen');
+    const resultScreen = document.getElementById('result-screen');
+    
+    const qCounter = document.getElementById('question-counter');
+    const qTitle = document.getElementById('question-title');
+    const qText = document.getElementById('question-text');
+    const btnOpt1 = document.getElementById('btn-opt1');
+    const btnOpt2 = document.getElementById('btn-opt2');
+    
+    const expArea = document.getElementById('explanation-area');
+    const resultMsg = document.getElementById('result-message');
+    const expText = document.getElementById('explanation-text');
+    const nextBtn = document.getElementById('next-btn');
+
+    // --- 関数 ---
+
+    // 配列をシャッフルして新しい配列を返す関数
+    function shuffle(array) {
+        const newArray = [...array];
+        for (let i = newArray.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+        }
+        return newArray;
+    }
+
+    // ゲーム開始処理
+    function startGame() {
+        // 全20問からランダムに10問選ぶ
+        const shuffled = shuffle(allQuestions);
+        currentQuestions = shuffled.slice(0, maxQuestions);
+        
+        currentIndex = 0;
+        score = 0;
+        
+        startScreen.classList.add('hidden');
+        resultScreen.classList.add('hidden');
+        quizScreen.classList.remove('hidden');
+        
+        showQuestion();
+    }
+
+    // 問題表示
+    function showQuestion() {
+        const q = currentQuestions[currentIndex];
+        
+        // カウンター更新
+        qCounter.innerText = `第 ${currentIndex + 1} 問 / 全 ${maxQuestions} 問`;
+        
+        // 問題文セット
+        qTitle.innerText = q.title;
+        qText.innerText = q.q;
+        
+        // ボタンリセット
+        btnOpt1.innerText = "1. " + q.opts[0];
+        btnOpt2.innerText = "2. " + q.opts[1];
+        btnOpt1.disabled = false;
+        btnOpt2.disabled = false;
+        btnOpt1.className = 'option-btn';
+        btnOpt2.className = 'option-btn';
+        
+        // 解説エリアを隠す
+        expArea.classList.add('hidden');
+    }
+
+    // 回答判定
+    // choice: 1 or 2 (ボタンの引数) -> 配列インデックスは choice - 1
+    function checkAnswer(choice) {
+        const q = currentQuestions[currentIndex];
+        const selectedIndex = choice - 1;
+        const correctIndex = q.ans;
+        
+        // ボタン無効化（連打防止）
+        btnOpt1.disabled = true;
+        btnOpt2.disabled = true;
+
+        const isCorrect = (selectedIndex === correctIndex);
+        
+        // 正誤演出
+        if (isCorrect) {
+            score++;
+            resultMsg.innerText = "正解！";
+            resultMsg.className = "correct-msg";
+            // 選んだボタンを緑に
+            if (choice === 1) btnOpt1.classList.add('correct');
+            else btnOpt2.classList.add('correct');
+        } else {
+            resultMsg.innerText = "残念...";
+            resultMsg.className = "wrong-msg";
+            // 選んだボタンを赤に
+            if (choice === 1) btnOpt1.classList.add('wrong');
+            else btnOpt2.classList.add('wrong');
+            
+            // 正解のボタンを緑で表示してあげる
+            if (correctIndex === 0) btnOpt1.classList.add('correct');
+            else btnOpt2.classList.add('correct');
+        }
+
+        // 解説表示
+        expText.innerText = q.exp;
+        expArea.classList.remove('hidden');
+
+        // 最終問題ならボタンを「結果を見る」に変える
+        if (currentIndex === maxQuestions - 1) {
+            nextBtn.innerText = "結果を見る";
+        } else {
+            nextBtn.innerText = "次の問題へ";
+        }
+    }
+
+    // 次の問題へ遷移
+    function nextQuestion() {
+        currentIndex++;
+        if (currentIndex < maxQuestions) {
+            showQuestion();
+        } else {
+            showResult();
+        }
+    }
+
+    // 結果画面表示
+    function showResult() {
+        quizScreen.classList.add('hidden');
+        resultScreen.classList.remove('hidden');
+        
+        const finalScoreEl = document.getElementById('final-score');
+        const finalCommentEl = document.getElementById('final-comment');
+        
+        finalScoreEl.innerText = `${score} / ${maxQuestions} 点`;
+        
+        if (score === 10) {
+            finalCommentEl.innerText = "すごい！全問正解！\nあなたこそ真の大月町マスターです！";
+        } else if (score >= 7) {
+            finalCommentEl.innerText = "素晴らしい！\n大月町のことにかなり詳しいですね！";
+        } else if (score >= 4) {
+            finalCommentEl.innerText = "あと少し！\nぜひ実際に大月町に遊びに来てみてください！";
+        } else {
+            finalCommentEl.innerText = "まだまだ知らない魅力がいっぱい！\nもう一度チャレンジしてみよう！";
+        }
+    }
+
+</script>
+
+</body>
+</html>
