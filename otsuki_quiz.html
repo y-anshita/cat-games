@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>大月町 2択クイズ</title>
+    <title>ねこだま的「大月町」クイズ</title>
     <style>
         :root {
             --primary-color: #00a8cc; /* 大月の海のような青 */
@@ -19,21 +19,34 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
+            height: 100vh; /* 画面いっぱいの高さ */
             margin: 0;
             padding: 20px;
+            overflow: hidden; /* 画面全体のスクロールバーを非表示に */
+            box-sizing: border-box;
         }
 
         #game-container {
             background: white;
             width: 100%;
             max-width: 600px;
+            /* 画面からはみ出る場合はコンテナ内でスクロールさせる */
+            max-height: 90vh; 
+            overflow-y: auto;
+            /* スクロールバーを非表示にする設定 */
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+            
             border-radius: 20px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            overflow: hidden;
             text-align: center;
             padding: 30px;
             position: relative;
+        }
+
+        /* Chrome, Safari, Opera用のスクロールバー非表示設定 */
+        #game-container::-webkit-scrollbar {
+            display: none;
         }
 
         /* --- 共通スタイル --- */
@@ -41,6 +54,7 @@
             font-size: 24px;
             margin-bottom: 20px;
             color: var(--primary-color);
+            line-height: 1.4;
         }
 
         .btn {
@@ -67,16 +81,18 @@
 
         /* --- スタート画面 --- */
         #cat-icon {
-            width: 120px;
-            height: 120px;
+            width: 150px; /* ロゴのサイズに合わせて調整 */
+            height: 150px;
             margin: 0 auto 20px;
         }
         
-        .cat-face { fill: #fff; stroke: #333; stroke-width: 3; }
-        .cat-eyes { fill: #333; }
-        .cat-nose { fill: pink; }
-        .cat-mouth { fill: none; stroke: #333; stroke-width: 3; stroke-linecap: round; }
-        .cat-ears { fill: #fff; stroke: #333; stroke-width: 3; }
+        /* 画像を枠内にきれいに収める設定 */
+        #cat-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
         .neko-badge {
             font-size: 14px;
             background: #eee;
@@ -181,28 +197,12 @@
     <!-- スタート画面 -->
     <div id="start-screen">
         <span class="neko-badge">ねこだまプロジェクト</span>
-        <!-- 可愛いネコのアイコン（SVG） -->
+        <!-- 画像に変更 -->
         <div id="cat-icon">
-            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                <!-- 耳 -->
-                <polygon points="20,30 20,10 45,25" class="cat-ears" />
-                <polygon points="80,30 80,10 55,25" class="cat-ears" />
-                <!-- 顔の輪郭 -->
-                <circle cx="50" cy="55" r="35" class="cat-face" />
-                <!-- 目 -->
-                <circle cx="38" cy="48" r="4" class="cat-eyes" />
-                <circle cx="62" cy="48" r="4" class="cat-eyes" />
-                <!-- 鼻 -->
-                <ellipse cx="50" cy="58" rx="3" ry="2" class="cat-nose" />
-                <!-- 口 -->
-                <path d="M42,63 Q50,68 58,63" class="cat-mouth" fill="none" />
-                <!-- ほっぺ（ピンク） -->
-                <circle cx="30" cy="60" r="5" fill="#ffccd5" opacity="0.6" />
-                <circle cx="70" cy="60" r="5" fill="#ffccd5" opacity="0.6" />
-            </svg>
+            <img src="nekodama_logo_gif.gif" alt="ねこだまロゴ">
         </div>
-        <h1>大月町を知ろう！<br>2択クイズ</h1>
-        <p>全20問の中からランダムで10問出題。<br>あなたは大月町マスターになれるかな？</p>
+        <h1>〜「大月マエストロ」になろう！〜</h1>
+        <p>全20問の中からランダムで10問出題。<br>あなたは「大月マエストロ」になれるかな？</p>
         <button class="btn" onclick="startGame()">クイズを始める</button>
     </div>
 
@@ -407,7 +407,7 @@
         finalScoreEl.innerText = `${score} / ${maxQuestions} 点`;
         
         if (score === 10) {
-            finalCommentEl.innerText = "すごい！全問正解！\nあなたこそ真の大月町マスターです！";
+            finalCommentEl.innerText = "すごい！全問正解！\nあなたこそ真の「大月マエストロ」です！";
         } else if (score >= 7) {
             finalCommentEl.innerText = "素晴らしい！\n大月町のことにかなり詳しいですね！";
         } else if (score >= 4) {
